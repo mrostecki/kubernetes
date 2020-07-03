@@ -36,6 +36,10 @@ KUBELET_FLAGS=${KUBELET_FLAGS:-""}
 KUBELET_IMAGE=${KUBELET_IMAGE:-""}
 # many dev environments run with swap on, so we don't fail in this env
 FAIL_SWAP_ON=${FAIL_SWAP_ON:-"false"}
+# CIDRs of pods will be allocated and set on the cloud provider if enabled.
+# This option might be needed by some network providers even if Kubernetes
+# is not deployed on the cloud (i.e. Cilium).
+ALLOCATE_NODE_CIDRS=${ALLOCATE_NODE_CIDRS:-"false"}
 # Name of the network plugin, eg: "kubenet"
 NET_PLUGIN=${NET_PLUGIN:-""}
 # Place the config files and binaries required by NET_PLUGIN in these directory,
@@ -624,7 +628,11 @@ EOF
 
 function start_controller_manager {
     node_cidr_args=()
+    # The --allocate-node-cidrs option has to be enabled when using kubenet.
     if [[ "${NET_PLUGIN}" == "kubenet" ]]; then
+      ALLOCATE_NODE_CIDRS="true"
+    fi
+    if [[ "${ALLOCATE_NODE_CIDRS}" == "true" ]]; then
       node_cidr_args=("--allocate-node-cidrs=true" "--cluster-cidr=${CLUSTER_CIDR}")
     fi
 
@@ -668,7 +676,11 @@ function start_cloud_controller_manager {
     fi
 
     node_cidr_args=()
+    # The --allocate-node-cidrs option has to be enabled when using kubenet.
     if [[ "${NET_PLUGIN}" == "kubenet" ]]; then
+      ALLOCATE_NODE_CIDRS="true"
+    fi
+    if [[ "${ALLOCATE_NODE_CIDRS}" == "true" ]]; then
       node_cidr_args=("--allocate-node-cidrs=true" "--cluster-cidr=${CLUSTER_CIDR}")
     fi
 
